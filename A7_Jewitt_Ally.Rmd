@@ -1,0 +1,143 @@
+---
+title: "A7_Jewitt_Ally"
+author: "Ally Jewitt"
+date: "2023-03-01"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Link to GitHub
+
+[GitHub](https://github.com/allyjewitt/BIOL432_Assignment7)
+
+## Append dragons to the nexus data set
+
+```{r}
+library(ape)
+DragonNexus<-read.nexus.data("./data/DragonMatrix.nex.txt")
+```
+
+```{r}
+DragonNexus <- readLines("./data/DragonMatrix.nex.txt")
+
+DragonTax <- c("75GermanXX", "76GermanXX", "77BritishX")
+Codes <- c("100111110100100110001000000000111000000001101000001100100000111000000000011100", "100101110100100101000100000000110000001000000000011000010001011100011000011010", "100100110100110011000001000100011000001000001010001100010000011000000000011100")
+
+nchar <- 78
+
+DragonNexus <- c(DragonNexus, "MATRIX")
+for (i in seq_along(DragonTax)) {
+  BinaryCode <- substr(paste(rep("0", nchar - nchar(Codes[i])), collapse=""), 1, nchar - nchar(Codes[i])) 
+  BinaryCode <- paste(BinaryCode, Codes[i], sep="")
+  DragonNexus <- c(DragonNexus, paste(DragonTax[i], BinaryCode))
+}
+
+DragonNexus <- c(DragonNexus, "END;")
+
+write.table(DragonNexus, file = "UpdatedDragonNexus.nex.txt", sep = "")
+```
+
+```{r}
+DragonNexus2<-read.nexus.data("./input/DragonNexus2.nex.txt")
+DragonNexusDF<-data.frame(matrix(unlist(DragonNexus2),ncol=79, byrow=T))
+row.names(DragonNexusDF)<-names(DragonNexus2)
+DragonNexusDF <- DragonNexusDF[ -c(79) ]
+```
+
+## Apply the trait weightings
+
+```{r}
+weightsDat<-read.csv("./Data/weights.csv")
+```
+
+```{r}
+weights<-paste0(weightsDat$Weight, collapse="")
+weights<-strsplit(weights,split="")[[1]]
+```
+
+```{r}
+LETTERS
+```
+
+```{r}
+which(LETTERS=="G")
+```
+
+```{r}
+weightsNum<-rep(NA,length(weights))
+for(i in 1:length(weightsNum)){
+  if(weights[i] %in% LETTERS){
+    weightsNum[i]<-which(LETTERS==weights[i])+9
+  } else{
+    weightsNum[i]<-weights[i]
+  }
+}
+weightsNum<-as.numeric(weightsNum)
+length(weightsNum)
+```
+
+```{r}
+wtDragonNexus<-DragonNexus2
+for (i in 1:length(DragonNexus2)){
+  RepWeight<-DragonNexus2[[i]]==1
+  wtDragonNexus[[i]][RepWeight]<-weightsNum[RepWeight]
+  RepWeight<-NA
+}
+```
+
+```{r, warnings = FALSE}
+wtDragonNexusDF<-data.frame(matrix(unlist(wtDragonNexus),ncol=79,byrow=T))
+wtDragonNexusDF <- wtDragonNexusDF[ -c(79) ]
+row.names(wtDragonNexusDF)<-names(wtDragonNexus)
+wtDragonDist<-dist(wtDragonNexusDF,method='euclidean')
+```
+
+## Embed dragon images
+
+![Figure 1. Fire-breathing dragon with wings by [Friedrich Justin
+Bertuch](https://en.wikipedia.org/wiki/Friedrich_Justin_Bertuch "Friedrich Justin Bertuch")
+from 1806](images/Dragon%201.jpeg)
+
+[Dragon 1
+URL](https://www.google.com/url?sa=i&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FDragon&psig=AOvVaw09SSA2I0HfbVopFwmELo9G&ust=1677763755347000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCMCIvpbruv0CFQAAAAAdAAAAABAX)
+
+![Figure 2. Fire-Spitting Three Headed Dragon painting by German School,
+2013.](images/Dragon%202.jpeg)
+
+[Dragon 2
+URL](https://www.google.com/url?sa=i&url=https%3A%2F%2Fpixels.com%2Ffeatured%2Fthree-headed-dragon-spitting-fire-german-school.html&psig=AOvVaw09SSA2I0HfbVopFwmELo9G&ust=1677763755347000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCMCIvpbruv0CFQAAAAAdAAAAABAb)
+
+![Figure 3. Creator is unknown](images/Dragon%203.jpeg)
+
+[Dragon 3
+URL](https://www.google.com/url?sa=i&url=https%3A%2F%2Fdreamsandmythology.com%2Fmythical-dragons%2F&psig=AOvVaw09SSA2I0HfbVopFwmELo9G&ust=1677763755347000&source=images&cd=vfe&ved=0CBAQjRxqFwoTCMCIvpbruv0CFQAAAAAdAAAAABAR)
+
+## Create phylogeny
+
+```{r echo=T, results='hide', message=FALSE}
+library(ggtree)
+WtDragonTree<-fastme.bal(wtDragonDist)
+WtDragonTreeNJ<-nj(wtDragonDist)
+```
+
+```{r warnings = FALSE}
+library(ape)
+ggtree(WtDragonTree,layout="circular") + geom_tiplab() 
+```
+
+## Fictional back story and data interpretation
+
+This phylogeny represents the evolutionary history of 80 dragons based
+on their traits. The phylogeny shows that my 3 dragons all share a
+common ancestor. Out of the 3 dragons, 75GermanXX and 77BritishX are
+more closely related with a more recent common ancestor. Some
+similarities among my dragons are their 4 appendages, wings, and snout
+features, which could have evolved to enhance their speed and scent to
+protect from predators.
